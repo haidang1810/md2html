@@ -1,89 +1,89 @@
-# Plan: Chuyển hệ thống notification từ polling sang webhook
+# Plan: Migrating the notification system from polling to webhooks
 
-Hiện tại worker poll DB mỗi 5 phút để gửi email/push, gây trễ ~3 phút. Chuyển sang webhook đẩy realtime, giảm latency xuống <5s và giảm 60% query DB.
+The worker currently polls the database every 5 minutes to send email and push notifications, causing ~3 minutes of end-to-end latency. Switching to webhooks pushes notifications in real time, dropping latency below 5s and cutting DB load by 60%.
 
-## Bối cảnh
+## Background
 
-Hệ thống `notification-worker` hiện đang chạy cron mỗi 5 phút, scan bảng `events` tìm row có `status = 'pending'` rồi gửi notification. Cách này có 3 vấn đề:
+The `notification-worker` runs a cron job every 5 minutes that scans the `events` table for rows with `status = 'pending'` and dispatches notifications. This approach has three problems:
 
-- Latency end-to-end trung bình 2.5 phút, p99 lên đến 6 phút.
-- Mỗi lần scan đọc ~50k row, tốn 30% CPU của DB primary.
-- Khi traffic spike, queue đầy → 1 vài event bị xử lý sau 30 phút.
+- End-to-end latency averages 2.5 minutes, with p99 reaching 6 minutes.
+- Each scan reads ~50k rows, consuming 30% of CPU on the DB primary.
+- During traffic spikes the queue backs up — some events take 30+ minutes to process.
 
-Quý này team được giao KPI giảm notification latency xuống <10s. Đây là lý do của plan này.
+This quarter the team has a KPI to drop notification latency below 10s. That's the motivation for this plan.
 
-## Mục tiêu
+## Goals
 
-Sau khi rollout xong:
+After rollout:
 
-- p99 latency của notification: từ 360s → <5s
-- DB query giảm 60% (đo bằng `pg_stat_statements`)
-- Không có downtime, không mất event nào trong quá trình migrate
+- p99 notification latency: 360s → <5s
+- DB query load reduced by 60% (measured via `pg_stat_statements`)
+- Zero downtime, zero event loss during migration
 
-## Kiến trúc đề xuất
+## Proposed architecture
 
-Producer (order-service, payment-service, …) emit event qua Kafka. Notification-router subscribe topic `events.*`, route đến đúng channel (email/push/SMS) qua webhook tới notification-worker. Worker gửi notification và ghi audit log vào Postgres.
+Producers (order-service, payment-service, …) emit events to Kafka. The `notification-router` subscribes to topic `events.*`, routes each event to the appropriate channel (email/push/SMS) via a webhook to `notification-worker`. The worker delivers the notification and writes an audit log to Postgres.
 
-Lưu ý: webhook giữa router và worker chạy nội bộ (cùng VPC), không qua public internet.
+Note: the webhook between router and worker runs internally inside the same VPC — it does not traverse the public internet.
 
-## Các bước thực hiện
+## Implementation steps
 
-1. **Tuần 1: Setup Kafka topic + router skeleton.** Tạo topic `events.notification` với 12 partition, retention 7 ngày. Deploy notification-router stub chỉ log message, chưa gửi đi đâu.
+1. **Week 1: Set up Kafka topic + router skeleton.** Create topic `events.notification` with 12 partitions and 7-day retention. Deploy a `notification-router` stub that only logs incoming messages — no real dispatch yet.
 
-2. **Tuần 2: Migrate producer.** Sửa order-service và payment-service để emit event vào Kafka song song với việc insert vào bảng `events` (double-write). Verify event count khớp nhau.
+2. **Week 2: Migrate producers.** Update `order-service` and `payment-service` to emit events to Kafka in parallel with inserting into the `events` table (double-write). Verify event counts match.
 
-3. **Tuần 3: Wire webhook router → worker.** Notification-router gọi webhook tới worker. Worker chạy paralel với cron cũ — cron vẫn quét bảng `events` nhưng skip row đã được webhook xử lý.
+3. **Week 3: Wire webhook router → worker.** The router calls the webhook on the worker. The worker runs in parallel with the existing cron — cron still scans `events` but skips rows already processed by the webhook.
 
-4. **Tuần 4: Cutover.** Tắt cron job, monitor 48h. Nếu ổn, xoá cột `status` khỏi bảng `events` (giữ bảng cho audit).
+4. **Week 4: Cutover.** Stop the cron job, monitor for 48h. If stable, drop the `status` column from `events` (keep the table itself for audit).
 
-5. **Tuần 5: Cleanup.** Drop bảng `events` legacy. Tạo Grafana dashboard mới cho metric latency.
+5. **Week 5: Cleanup.** Drop the legacy `events` table. Create a new Grafana dashboard for the latency metric.
 
-## Lựa chọn công nghệ message bus
+## Message bus choice
 
-Có 3 option chính:
+Three main candidates:
 
 ### Kafka
 
-Ưu điểm: throughput cao (đã có cluster sẵn), retention 7 ngày cho phép replay khi worker fail. Nhược: team chưa quen consumer group rebalancing.
+High throughput (we already have a cluster), and 7-day retention enables replay when the worker fails. Downside: the team is not yet familiar with consumer-group rebalancing.
 
 ### RabbitMQ
 
-Đơn giản, dễ ops. Nhưng không có replay, mất message nếu consumer chết trước khi ack.
+Simple and easy to operate. But no replay, and messages can be lost if a consumer dies before acking.
 
 ### AWS SQS
 
-Managed, không lo về ops. Nhưng cost ~$0.4/M message, với 50M/tháng = $20/tháng, ổn. Vendor lock-in nhẹ.
+Managed, no ops burden. Costs about $0.4 per million messages — roughly $20/month at 50M messages. Slight vendor lock-in.
 
-Quyết định: dùng Kafka vì đã có infra sẵn và cần replay capability.
+Decision: go with Kafka because the infrastructure already exists and we need replay capability to avoid event loss during worker restarts.
 
-## Rủi ro
+## Risks
 
-Có 2 rủi ro chính cần lưu ý:
+There are two main risks to call out.
 
-Webhook giữa router và worker có thể bị mất nếu worker restart đúng lúc nhận request. Phải implement idempotency key + retry exponential backoff ở router.
+The webhook between router and worker can be lost if the worker restarts mid-request. We must implement idempotency keys plus exponential-backoff retry in the router.
 
-Double-write giai đoạn tuần 2 có thể gây inconsistency nếu Kafka emit fail nhưng DB insert success. Mitigation: dùng transactional outbox pattern.
+The double-write phase in week 2 can produce inconsistency if a Kafka emit fails after the DB insert succeeds. Mitigation: use the transactional outbox pattern.
 
-KHÔNG được drop bảng `events` trước tuần 5 vì nếu rollback cần dữ liệu này.
+DO NOT drop the `events` table before week 5. If we need to roll back at week 4, that data is our only restore source.
 
-## Ưu / Nhược webhook approach
+## Pros and cons of the webhook approach
 
-Ưu điểm:
-- Realtime, không phải poll
-- Giảm tải DB drastically
-- Scale ngang theo partition Kafka
+Pros:
+- Real-time delivery, no polling overhead
+- DB load drops drastically
+- Scales horizontally with Kafka partitions
 
-Nhược điểm:
-- Cần xử lý retry/idempotency cẩn thận
-- Debug khó hơn cron (state nằm ở queue)
-- Phải maintain 2 codepath trong 4 tuần
+Cons:
+- Retry and idempotency need careful handling
+- Harder to debug than cron (state lives in the queue)
+- Two code paths to maintain for four weeks
 
-## Chi tiết kỹ thuật retry policy
+## Technical detail: retry policy
 
-Khi webhook fail, router retry theo exponential backoff: 1s, 4s, 16s, 64s, 256s, 1024s. Sau 6 lần fail, push event vào dead-letter topic `events.dlq` và alert oncall. Idempotency key = `sha256(event_id + channel + recipient)`, store ở Redis TTL 24h.
+When a webhook call fails, the router retries with exponential backoff: 1s, 4s, 16s, 64s, 256s, 1024s. After six failures the event is pushed to the dead-letter topic `events.dlq` and oncall is paged. The idempotency key is `sha256(event_id + channel + recipient)`, stored in Redis with a 24-hour TTL.
 
-Tham khảo: https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/
+Reference: https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/
 
-## Tổng kết
+## Summary
 
-Chuyển sang webhook cắt giảm 99% latency và 60% DB load, đổi lại độ phức tạp tăng vừa phải. Plan 5 tuần với 1 tuần monitoring trước cutover đảm bảo rollback an toàn.
+Switching from polling to webhooks cuts 99% of latency and 60% of DB load in exchange for a moderate increase in operational complexity. A five-week plan with one week of monitoring before cutover keeps rollback safe.

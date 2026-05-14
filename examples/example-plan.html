@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="light" style="--rec-label: '★ Đề xuất'">
+<html lang="en" data-theme="light" style="--rec-label: '★ Recommended'">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light dark">
-  <title>Plan: Chuyển hệ thống notification từ polling sang webhook</title>
+  <title>Plan: Migrating the notification system from polling to webhooks</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -92,158 +92,47 @@
     }
     * { box-sizing: border-box; }
     html { scroll-behavior: smooth; scroll-padding-top: 80px; }
-    body {
-      margin: 0;
-      font-family: var(--font-sans);
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.65;
-      font-size: 16px;
-      -webkit-font-smoothing: antialiased;
-      transition: background-color 0.2s, color 0.2s;
-    }
+    body { margin: 0; font-family: var(--font-sans); background: var(--bg); color: var(--text); line-height: 1.65; font-size: 16px; -webkit-font-smoothing: antialiased; transition: background-color 0.2s, color 0.2s; }
     ::selection { background: var(--accent-soft); color: var(--accent-strong); }
-    .skip-link {
-      position: absolute; top: -100px; left: 8px;
-      padding: 10px 16px; background: var(--accent); color: #fff;
-      text-decoration: none; border-radius: var(--radius-sm);
-      font-weight: 500; z-index: 1000; transition: top 0.15s;
-    }
+    .skip-link { position: absolute; top: -100px; left: 8px; padding: 10px 16px; background: var(--accent); color: #fff; text-decoration: none; border-radius: var(--radius-sm); font-weight: 500; z-index: 1000; transition: top 0.15s; }
     .skip-link:focus { top: 8px; }
     .icon-sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
     .icon { display: inline-block; flex-shrink: 0; vertical-align: middle; stroke: currentColor; fill: none; }
-    .scroll-progress {
-      position: fixed; top: 0; left: 0;
-      height: 2px; width: 0; background: var(--accent);
-      z-index: var(--z-progress); transition: width 0.05s linear;
-    }
-    .topbar {
-      position: sticky; top: 0; z-index: var(--z-topbar);
-      background: rgba(250, 250, 247, 0.85);
-      backdrop-filter: saturate(180%) blur(12px);
-      -webkit-backdrop-filter: saturate(180%) blur(12px);
-      border-bottom: 1px solid var(--border);
-    }
+    .scroll-progress { position: fixed; top: 0; left: 0; height: 2px; width: 0; background: var(--accent); z-index: var(--z-progress); transition: width 0.05s linear; }
+    .topbar { position: sticky; top: 0; z-index: var(--z-topbar); background: rgba(250, 250, 247, 0.85); backdrop-filter: saturate(180%) blur(12px); -webkit-backdrop-filter: saturate(180%) blur(12px); border-bottom: 1px solid var(--border); }
     [data-theme="dark"] .topbar { background: rgba(26, 23, 20, 0.85); }
-    .topbar-inner {
-      max-width: 1280px; margin: 0 auto;
-      padding: 10px 20px;
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 12px;
-    }
-    .brand {
-      display: flex; align-items: center; gap: 10px;
-      font-weight: 600; color: var(--text); font-size: 14px;
-    }
-    .brand-dot {
-      width: 10px; height: 10px; border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 0 4px var(--accent-soft);
-      animation: brand-pulse 2.8s ease-in-out infinite;
-    }
-    @keyframes brand-pulse {
-      0%, 100% { box-shadow: 0 0 0 4px var(--accent-soft); }
-      50%      { box-shadow: 0 0 0 7px transparent; }
-    }
+    .topbar-inner { max-width: 1280px; margin: 0 auto; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 600; color: var(--text); font-size: 14px; }
+    .brand-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); animation: brand-pulse 2.8s ease-in-out infinite; }
+    @keyframes brand-pulse { 0%, 100% { box-shadow: 0 0 0 4px var(--accent-soft); } 50% { box-shadow: 0 0 0 7px transparent; } }
     .topbar-actions { display: flex; gap: 6px; align-items: center; }
-    .icon-btn {
-      width: 40px; height: 40px;
-      display: inline-flex; align-items: center; justify-content: center;
-      border: 1px solid var(--border); background: var(--surface);
-      color: var(--text-muted); border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: color 0.15s, border-color 0.15s, background-color 0.15s;
-      padding: 0;
-    }
+    .icon-btn { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); border-radius: var(--radius-sm); cursor: pointer; transition: color 0.15s, border-color 0.15s, background-color 0.15s; padding: 0; }
     .icon-btn .icon { width: 18px; height: 18px; stroke-width: 2; }
-    .layout {
-      max-width: 1280px; margin: 0 auto;
-      display: grid; grid-template-columns: 260px 1fr;
-      gap: 48px; padding: 32px 24px 96px;
-    }
+    .layout { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 260px 1fr; gap: 48px; padding: 32px 24px 96px; }
     .content { min-width: 0; }
-    .toc {
-      position: sticky; top: 80px; align-self: start;
-      max-height: calc(100vh - 100px); overflow-y: auto;
-      padding-right: 8px;
-    }
+    .toc { position: sticky; top: 80px; align-self: start; max-height: calc(100vh - 100px); overflow-y: auto; padding-right: 8px; }
     .toc::-webkit-scrollbar { width: 6px; }
     .toc::-webkit-scrollbar-track { background: transparent; }
     .toc::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
-    .toc-head {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 12px 12px;
-    }
-    .toc-title {
-      font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      color: var(--text-subtle); margin: 0;
-    }
+    .toc-head { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 12px; }
+    .toc-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-subtle); margin: 0; }
     .toc-close { display: none; }
     .toc-nav { display: flex; flex-direction: column; gap: 2px; }
-    .toc-nav a {
-      display: flex; align-items: center;
-      min-height: 36px; padding: 8px 14px;
-      color: var(--text-muted); text-decoration: none;
-      font-size: 13.5px;
-      border-left: 2px solid transparent;
-      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-      transition: color 0.15s, background-color 0.15s, border-color 0.15s;
-      line-height: 1.4;
-    }
-    .toc-nav a.active {
-      color: var(--accent); border-left-color: var(--accent);
-      background: var(--accent-soft); font-weight: 500;
-    }
+    .toc-nav a { display: flex; align-items: center; min-height: 36px; padding: 8px 14px; color: var(--text-muted); text-decoration: none; font-size: 13.5px; border-left: 2px solid transparent; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; transition: color 0.15s, background-color 0.15s, border-color 0.15s; line-height: 1.4; }
+    .toc-nav a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); font-weight: 500; }
     .toc-nav a.lvl-3 { padding-left: 26px; font-size: 12.5px; }
-    .toc-backdrop {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0, 0, 0, 0.45);
-      z-index: var(--z-backdrop); opacity: 0;
-      transition: opacity 0.2s;
-    }
+    .toc-backdrop { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.45); z-index: var(--z-backdrop); opacity: 0; transition: opacity 0.2s; }
     .doc-header { margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
-    .doc-eyebrow {
-      display: inline-flex; align-items: center; gap: 6px;
-      padding: 4px 10px;
-      background: var(--accent-soft);
-      color: var(--accent-strong);
-      border: 1px solid var(--accent-border);
-      border-radius: 999px;
-      font-size: 12px; font-weight: 500;
-      letter-spacing: 0.04em;
-      margin-bottom: 16px;
-    }
-    .doc-title {
-      font-size: clamp(28px, 3vw + 16px, 40px);
-      font-weight: 700; line-height: 1.15;
-      letter-spacing: -0.02em; margin: 0 0 12px;
-      color: var(--text); text-wrap: balance;
-    }
-    .doc-subtitle {
-      font-size: clamp(15px, 0.6vw + 13px, 18px);
-      color: var(--text-muted); line-height: 1.55;
-      margin: 0 0 20px; max-width: 75ch; text-wrap: pretty;
-    }
+    .doc-eyebrow { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--accent-soft); color: var(--accent-strong); border: 1px solid var(--accent-border); border-radius: 999px; font-size: 12px; font-weight: 500; letter-spacing: 0.04em; margin-bottom: 16px; }
+    .doc-title { font-size: clamp(28px, 3vw + 16px, 40px); font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 12px; color: var(--text); text-wrap: balance; }
+    .doc-subtitle { font-size: clamp(15px, 0.6vw + 13px, 18px); color: var(--text-muted); line-height: 1.55; margin: 0 0 20px; max-width: 75ch; text-wrap: pretty; }
     .doc-meta { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--text-subtle); }
     .doc-meta-item { display: inline-flex; align-items: center; gap: 6px; }
     .doc-meta .icon { width: 14px; height: 14px; stroke-width: 2; }
-    .content h1, .content h2, .content h3, .content h4 {
-      color: var(--text); line-height: 1.3;
-      letter-spacing: -0.01em; scroll-margin-top: 80px;
-      text-wrap: balance;
-    }
-    .content h2 {
-      font-size: 26px; font-weight: 600;
-      margin: 56px 0 16px; padding-top: 8px;
-      position: relative;
-    }
+    .content h1, .content h2, .content h3, .content h4 { color: var(--text); line-height: 1.3; letter-spacing: -0.01em; scroll-margin-top: 80px; text-wrap: balance; }
+    .content h2 { font-size: 26px; font-weight: 600; margin: 56px 0 16px; padding-top: 8px; position: relative; }
     .content h3 { font-size: 19px; font-weight: 600; margin: 36px 0 12px; position: relative; }
-    .content h4 {
-      font-size: 13px; font-weight: 600;
-      margin: 24px 0 8px; color: var(--text-muted);
-      text-transform: uppercase; letter-spacing: 0.06em;
-    }
+    .content h4 { font-size: 13px; font-weight: 600; margin: 24px 0 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
     .content > p, .content > ul, .content > ol, .content > blockquote { max-width: 75ch; }
     .content p { margin: 0 0 16px; text-wrap: pretty; overflow-wrap: anywhere; }
     .content a { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-border); }
@@ -252,265 +141,90 @@
     .content strong { color: var(--text); font-weight: 600; }
     .content em { color: var(--text-muted); }
     .content hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
-    .anchor {
-      display: inline-flex; align-items: center; justify-content: center;
-      width: 24px; height: 24px; margin-left: 6px;
-      color: var(--text-subtle); opacity: 0;
-      transform: translateY(-1px);
-      transition: opacity 0.15s, color 0.15s;
-      border-bottom: none !important;
-      border-radius: var(--radius-sm);
-    }
+    .anchor { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; margin-left: 6px; color: var(--text-subtle); opacity: 0; transform: translateY(-1px); transition: opacity 0.15s, color 0.15s; border-bottom: none !important; border-radius: var(--radius-sm); }
     .anchor .icon { width: 14px; height: 14px; stroke-width: 2; }
-    .content img {
-      max-width: 100%; height: auto;
-      border-radius: var(--radius); border: 1px solid var(--border);
-      margin: 20px 0; display: block;
-    }
+    .content img { max-width: 100%; height: auto; border-radius: var(--radius); border: 1px solid var(--border); margin: 20px 0; display: block; }
     .content figure { margin: 20px 0; }
     .content figure img { margin: 0; }
-    .content figcaption {
-      font-size: 13px; color: var(--text-subtle);
-      margin-top: 8px; text-align: center;
-    }
+    .content figcaption { font-size: 13px; color: var(--text-subtle); margin-top: 8px; text-align: center; }
     .content .task-list-item { list-style: none; margin-left: -22px; }
     .content .task-list-item-checkbox { margin-right: 8px; vertical-align: -2px; accent-color: var(--accent); }
-    .content .footnote-ref a, .content sup a {
-      font-size: 0.75em; vertical-align: super;
-      border-bottom: none; padding: 0 2px;
-    }
-    .content .footnotes {
-      margin-top: 56px; padding-top: 20px;
-      border-top: 1px solid var(--border);
-      font-size: 14px; color: var(--text-muted);
-    }
-    .content code {
-      font-family: var(--font-mono); background: var(--code-bg);
-      padding: 2px 6px; border-radius: 4px;
-      font-size: 0.88em; color: var(--code-text);
-      border: 1px solid var(--border);
-      overflow-wrap: anywhere;
-    }
-    .content pre {
-      background: var(--code-bg); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px 20px;
-      overflow-x: auto; font-size: 13.5px;
-      line-height: 1.6; margin: 16px 0;
-      position: relative;
-    }
+    .content code { font-family: var(--font-mono); background: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-size: 0.88em; color: var(--code-text); border: 1px solid var(--border); overflow-wrap: anywhere; }
+    .content pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; overflow-x: auto; font-size: 13.5px; line-height: 1.6; margin: 16px 0; position: relative; }
     .content pre code { background: none; padding: 0; border: none; color: var(--code-text); font-size: inherit; }
-    .copy-btn {
-      position: absolute; top: 8px; right: 8px;
-      width: 32px; height: 32px;
-      display: inline-flex; align-items: center; justify-content: center;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); cursor: pointer;
-      color: var(--text-subtle); opacity: 0;
-      transition: opacity 0.15s, color 0.15s, border-color 0.15s;
-      padding: 0;
-    }
+    .copy-btn { position: absolute; top: 8px; right: 8px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer; color: var(--text-subtle); opacity: 0; transition: opacity 0.15s, color 0.15s, border-color 0.15s; padding: 0; }
     .copy-btn .icon { width: 14px; height: 14px; stroke-width: 2; }
     .copy-btn.copied { color: var(--success); border-color: var(--success-border); opacity: 1; }
-    .timeline {
-      display: flex; flex-direction: column; gap: 8px;
-      margin: 24px 0; position: relative;
-    }
-    .timeline::before {
-      content: ""; position: absolute;
-      left: 19px; top: 20px; bottom: 20px;
-      width: 2px;
-      background: linear-gradient(180deg, var(--accent-border), var(--border));
-    }
-    .step {
-      display: grid; grid-template-columns: 40px 1fr;
-      gap: 16px; align-items: start;
-      padding: 16px 4px; position: relative;
-      border-radius: var(--radius);
-      transition: background-color 0.15s;
-    }
-    .step-num {
-      width: 40px; height: 40px;
-      display: inline-flex; align-items: center; justify-content: center;
-      background: var(--surface); border: 2px solid var(--accent);
-      color: var(--accent); border-radius: 50%;
-      font-weight: 600; font-size: 14px;
-      flex-shrink: 0; box-shadow: var(--shadow-sm);
-      position: relative; z-index: 1;
-      transition: background-color 0.15s, color 0.15s, transform 0.15s;
-    }
+    .timeline { display: flex; flex-direction: column; gap: 8px; margin: 24px 0; position: relative; }
+    .timeline::before { content: ""; position: absolute; left: 19px; top: 20px; bottom: 20px; width: 2px; background: linear-gradient(180deg, var(--accent-border), var(--border)); }
+    .step { display: grid; grid-template-columns: 40px 1fr; gap: 16px; align-items: start; padding: 16px 4px; position: relative; border-radius: var(--radius); transition: background-color 0.15s; }
+    .step-num { width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; background: var(--surface); border: 2px solid var(--accent); color: var(--accent); border-radius: 50%; font-weight: 600; font-size: 14px; flex-shrink: 0; box-shadow: var(--shadow-sm); position: relative; z-index: 1; transition: background-color 0.15s, color 0.15s, transform 0.15s; }
     .step.done .step-num { background: var(--accent); color: #fff; }
     .step-body { padding-top: 6px; min-width: 0; }
     .step-body h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
     .step-body p { margin: 0 0 8px; color: var(--text-muted); font-size: 14.5px; max-width: 75ch; }
     .step-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-    .tag {
-      display: inline-block; padding: 2px 8px;
-      background: var(--surface-2); border: 1px solid var(--border);
-      border-radius: 999px; font-size: 11.5px;
-      color: var(--text-muted); font-family: var(--font-mono);
-    }
-    .callout {
-      display: grid; grid-template-columns: 24px 1fr;
-      gap: 14px; padding: 14px 18px;
-      border-radius: var(--radius); border: 1px solid;
-      margin: 20px 0;
-      font-size: 14.5px; line-height: 1.6;
-      max-width: 75ch;
-    }
+    .tag { display: inline-block; padding: 2px 8px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; font-size: 11.5px; color: var(--text-muted); font-family: var(--font-mono); }
+    .callout { display: grid; grid-template-columns: 24px 1fr; gap: 14px; padding: 14px 18px; border-radius: var(--radius); border: 1px solid; margin: 20px 0; font-size: 14.5px; line-height: 1.6; max-width: 75ch; }
     .callout-icon { width: 20px; height: 20px; margin-top: 2px; stroke-width: 2; }
     .callout-body { min-width: 0; }
     .callout-title { font-weight: 600; margin: 0 0 4px; font-size: 14px; }
     .callout-body p:last-child { margin-bottom: 0; }
     .callout-body code { background: rgba(0,0,0,0.04); }
     [data-theme="dark"] .callout-body code { background: rgba(255,255,255,0.06); }
-    .callout-info     { background: var(--info-soft);     border-color: var(--info-border);     color: var(--text); }
-    .callout-info     .callout-title, .callout-info     .callout-icon { color: var(--info); }
-    .callout-warn     { background: var(--warn-soft);     border-color: var(--warn-border);     color: var(--text); }
-    .callout-warn     .callout-title, .callout-warn     .callout-icon { color: var(--warn); }
-    .callout-danger   { background: var(--danger-soft);   border-color: var(--danger-border);   color: var(--text); }
-    .callout-danger   .callout-title, .callout-danger   .callout-icon { color: var(--danger); }
-    .callout-success  { background: var(--success-soft);  border-color: var(--success-border);  color: var(--text); }
-    .callout-success  .callout-title, .callout-success  .callout-icon { color: var(--success); }
+    .callout-info { background: var(--info-soft); border-color: var(--info-border); color: var(--text); }
+    .callout-info .callout-title, .callout-info .callout-icon { color: var(--info); }
+    .callout-warn { background: var(--warn-soft); border-color: var(--warn-border); color: var(--text); }
+    .callout-warn .callout-title, .callout-warn .callout-icon { color: var(--warn); }
+    .callout-danger { background: var(--danger-soft); border-color: var(--danger-border); color: var(--text); }
+    .callout-danger .callout-title, .callout-danger .callout-icon { color: var(--danger); }
+    .callout-success { background: var(--success-soft); border-color: var(--success-border); color: var(--text); }
+    .callout-success .callout-title, .callout-success .callout-icon { color: var(--success); }
     .callout-decision { background: var(--decision-soft); border-color: var(--decision-border); color: var(--text); }
     .callout-decision .callout-title, .callout-decision .callout-icon { color: var(--decision); }
-    .callout-tip      { background: var(--accent-soft);   border-color: var(--accent-border);   color: var(--text); }
-    .callout-tip      .callout-title, .callout-tip      .callout-icon { color: var(--accent-strong); }
-    .highlight {
-      background: linear-gradient(135deg, var(--accent-soft), var(--surface-2));
-      border-left: 4px solid var(--accent);
-      padding: 18px 22px;
-      border-radius: 0 var(--radius) var(--radius) 0;
-      margin: 24px 0;
-      font-size: 16px; line-height: 1.65;
-      max-width: 75ch;
-    }
-    .highlight-label {
-      display: inline-block; font-size: 11px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.08em;
-      color: var(--accent-strong); margin-bottom: 6px;
-    }
-    .diagram {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 24px; margin: 24px 0;
-      box-shadow: var(--shadow-sm); overflow-x: auto;
-    }
-    .diagram-caption {
-      margin-top: 12px; padding-top: 12px;
-      border-top: 1px dashed var(--border);
-      font-size: 13px; color: var(--text-subtle);
-      text-align: center;
-    }
+    .callout-tip { background: var(--accent-soft); border-color: var(--accent-border); color: var(--text); }
+    .callout-tip .callout-title, .callout-tip .callout-icon { color: var(--accent-strong); }
+    .highlight { background: linear-gradient(135deg, var(--accent-soft), var(--surface-2)); border-left: 4px solid var(--accent); padding: 18px 22px; border-radius: 0 var(--radius) var(--radius) 0; margin: 24px 0; font-size: 16px; line-height: 1.65; max-width: 75ch; }
+    .highlight-label { display: inline-block; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent-strong); margin-bottom: 6px; }
+    .diagram { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin: 24px 0; box-shadow: var(--shadow-sm); overflow-x: auto; }
+    .diagram-caption { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); font-size: 13px; color: var(--text-subtle); text-align: center; }
     .mermaid { text-align: center; min-height: 80px; }
     .mermaid svg { max-width: 100%; height: auto; }
-    .mermaid:not([data-processed]) {
-      opacity: 0.4; font-family: var(--font-mono);
-      font-size: 12px; color: var(--text-subtle);
-      white-space: pre-wrap; text-align: left;
-    }
+    .mermaid:not([data-processed]) { opacity: 0.4; font-family: var(--font-mono); font-size: 12px; color: var(--text-subtle); white-space: pre-wrap; text-align: left; }
     .proscons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0; }
     .proscons-col { padding: 16px 20px; border-radius: var(--radius); border: 1px solid; }
-    .proscons-col h4 {
-      margin: 0 0 12px; font-size: 13px;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      display: flex; align-items: center; gap: 8px;
-    }
+    .proscons-col h4 { margin: 0 0 12px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: center; gap: 8px; }
     .proscons-col ul { margin: 0; padding-left: 18px; }
     .proscons-col li { margin: 6px 0; }
     .pros { background: var(--success-soft); border-color: var(--success-border); }
     .pros h4 { color: var(--success); }
     .cons { background: var(--danger-soft); border-color: var(--danger-border); }
     .cons h4 { color: var(--danger); }
-    .compare {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 14px; margin: 24px 0;
-    }
-    .compare-card {
-      padding: 18px; background: var(--surface);
-      border: 1px solid var(--border); border-radius: var(--radius);
-      transition: border-color 0.18s, box-shadow 0.18s;
-      position: relative;
-    }
+    .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; margin: 24px 0; }
+    .compare-card { padding: 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); transition: border-color 0.18s, box-shadow 0.18s; position: relative; }
     .compare-card.recommended { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
-    .compare-card.recommended::before {
-      content: var(--rec-label, "★ Recommended");
-      position: absolute; top: -10px; right: 14px;
-      background: var(--accent); color: #fff;
-      padding: 2px 10px; border-radius: 999px;
-      font-size: 11px; font-weight: 600;
-    }
+    .compare-card.recommended::before { content: var(--rec-label, "★ Recommended"); position: absolute; top: -10px; right: 14px; background: var(--accent); color: #fff; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; }
     .compare-card h4 { margin: 0 0 8px; font-size: 15px; color: var(--text); text-transform: none; letter-spacing: normal; }
     .compare-card p { margin: 0; color: var(--text-muted); font-size: 14px; }
-    details.collapsible {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      margin: 16px 0; background: var(--surface);
-      overflow: hidden;
-    }
+    details.collapsible { border: 1px solid var(--border); border-radius: var(--radius); margin: 16px 0; background: var(--surface); overflow: hidden; }
     details.collapsible[open] { box-shadow: var(--shadow-sm); }
-    details.collapsible > summary {
-      cursor: pointer; padding: 14px 18px;
-      font-weight: 500; color: var(--text);
-      list-style: none;
-      display: flex; align-items: center; gap: 10px;
-      user-select: none; transition: background 0.15s;
-      min-height: 44px;
-    }
+    details.collapsible > summary { cursor: pointer; padding: 14px 18px; font-weight: 500; color: var(--text); list-style: none; display: flex; align-items: center; gap: 10px; user-select: none; transition: background 0.15s; min-height: 44px; }
     details.collapsible > summary::-webkit-details-marker { display: none; }
-    details.collapsible > summary::before {
-      content: "›"; display: inline-block;
-      transition: transform 0.18s;
-      color: var(--accent); font-size: 18px; font-weight: 700;
-    }
+    details.collapsible > summary::before { content: "›"; display: inline-block; transition: transform 0.18s; color: var(--accent); font-size: 18px; font-weight: 700; }
     details.collapsible[open] > summary::before { transform: rotate(90deg); }
     .collapsible-body { padding: 4px 18px 18px; border-top: 1px solid var(--border); }
     .collapsible-body > *:first-child { margin-top: 12px; }
-    .table-wrap {
-      overflow-x: auto; margin: 20px 0;
-      border-radius: var(--radius);
-      border: 1px solid var(--border); max-width: 100%;
-    }
-    .content table {
-      width: 100%; border-collapse: collapse;
-      font-size: 14px; background: var(--surface); margin: 0;
-    }
-    .content > table {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden; margin: 20px 0;
-      display: block; overflow-x: auto;
-    }
-    .content th {
-      background: var(--surface-2); color: var(--text);
-      font-weight: 600; text-align: left;
-      padding: 12px 14px; border-bottom: 1px solid var(--border);
-      font-size: 13px; text-transform: uppercase;
-      letter-spacing: 0.04em; white-space: nowrap;
-    }
-    .content td {
-      padding: 12px 14px; border-bottom: 1px solid var(--border);
-      color: var(--text-muted); vertical-align: top;
-    }
+    .table-wrap { overflow-x: auto; margin: 20px 0; border-radius: var(--radius); border: 1px solid var(--border); max-width: 100%; }
+    .content table { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--surface); margin: 0; }
+    .content > table { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 20px 0; display: block; overflow-x: auto; }
+    .content th { background: var(--surface-2); color: var(--text); font-weight: 600; text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+    .content td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text-muted); vertical-align: top; }
     .content tr:last-child td { border-bottom: none; }
-    .content blockquote {
-      margin: 20px 0; padding: 4px 20px;
-      border-left: 3px solid var(--accent-border);
-      color: var(--text-muted); font-style: italic;
-    }
-    .doc-footer {
-      margin-top: 80px; padding-top: 24px;
-      border-top: 1px solid var(--border);
-      font-size: 13px; color: var(--text-subtle);
-      display: flex; justify-content: space-between;
-      flex-wrap: wrap; gap: 12px;
-    }
+    .content blockquote { margin: 20px 0; padding: 4px 20px; border-left: 3px solid var(--accent-border); color: var(--text-muted); font-style: italic; }
+    .doc-footer { margin-top: 80px; padding-top: 24px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-subtle); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .doc-footer a { color: var(--accent); text-decoration: none; }
     *:focus { outline: none; }
-    *:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 3px;
-      border-radius: var(--radius-sm);
-    }
+    *:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: var(--radius-sm); }
     .toc-nav a:focus-visible { outline-offset: -2px; }
     .icon-btn:focus-visible { outline-offset: 2px; }
     .anchor:focus-visible { opacity: 1; outline-offset: 2px; }
@@ -530,33 +244,15 @@
       .copy-btn:hover { color: var(--accent); border-color: var(--accent-border); }
       .content pre:hover .copy-btn { opacity: 1; }
     }
-    @media (hover: none) {
-      .copy-btn { opacity: 0.6; }
-      .anchor { opacity: 0.4; }
-    }
+    @media (hover: none) { .copy-btn { opacity: 0.6; } .anchor { opacity: 0.4; } }
     @media (max-width: 900px) {
       .layout { grid-template-columns: 1fr; gap: 16px; padding: 20px 16px 80px; }
       .topbar-inner { padding: 8px 12px; }
       .doc-header { margin-bottom: 28px; padding-bottom: 20px; }
       .toc-mobile-trigger { display: inline-flex !important; }
-      .toc {
-        position: fixed; top: 0; left: 0;
-        width: min(300px, 82vw); height: 100dvh; max-height: 100dvh;
-        background: var(--surface); z-index: var(--z-drawer);
-        padding: 16px 8px 24px 16px;
-        box-shadow: var(--shadow-lg);
-        transform: translateX(-105%);
-        transition: transform 0.25s ease;
-      }
+      .toc { position: fixed; top: 0; left: 0; width: min(300px, 82vw); height: 100dvh; max-height: 100dvh; background: var(--surface); z-index: var(--z-drawer); padding: 16px 8px 24px 16px; box-shadow: var(--shadow-lg); transform: translateX(-105%); transition: transform 0.25s ease; }
       .toc-head { padding: 4px 4px 12px 8px; }
-      .toc-close {
-        display: inline-flex !important;
-        width: 36px; height: 36px;
-        align-items: center; justify-content: center;
-        background: transparent; border: 1px solid transparent;
-        border-radius: var(--radius-sm);
-        color: var(--text-muted); cursor: pointer; padding: 0;
-      }
+      .toc-close { display: inline-flex !important; width: 36px; height: 36px; align-items: center; justify-content: center; background: transparent; border: 1px solid transparent; border-radius: var(--radius-sm); color: var(--text-muted); cursor: pointer; padding: 0; }
       .toc-close .icon { width: 18px; height: 18px; stroke-width: 2; }
       body.toc-open .toc { transform: translateX(0); }
       body.toc-open .toc-backdrop { display: block; opacity: 1; }
@@ -566,12 +262,7 @@
     }
     @media (min-width: 901px) { .toc-mobile-trigger { display: none !important; } }
     @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-      }
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
       html { scroll-behavior: auto; }
       .brand-dot { animation: none; box-shadow: 0 0 0 4px var(--accent-soft); }
     }
@@ -586,7 +277,7 @@
   </style>
 </head>
 <body>
-  <a href="#main" class="skip-link">Bỏ qua đến nội dung</a>
+  <a href="#main" class="skip-link">Skip to content</a>
   <div class="scroll-progress" id="scroll-progress" aria-hidden="true"></div>
 
   <svg class="icon-sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -613,17 +304,17 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">
-        <button class="icon-btn toc-mobile-trigger" id="toc-toggle" onclick="openToc()" aria-label="Mục lục" title="Mục lục">
+        <button class="icon-btn toc-mobile-trigger" id="toc-toggle" onclick="openToc()" aria-label="Contents" title="Contents">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-menu"/></svg>
         </button>
         <span class="brand-dot" aria-hidden="true"></span>
-        <span>Kế hoạch</span>
+        <span>Plan</span>
       </div>
       <div class="topbar-actions">
-        <button class="icon-btn" onclick="window.print()" title="In / Lưu PDF" aria-label="In / Lưu PDF">
+        <button class="icon-btn" onclick="window.print()" title="Print / Save PDF" aria-label="Print / Save PDF">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-printer"/></svg>
         </button>
-        <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Đổi theme" aria-label="Đổi theme">
+        <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use id="theme-icon-use" href="#i-moon"/></svg>
         </button>
       </div>
@@ -633,31 +324,31 @@
   <div class="toc-backdrop" onclick="closeToc()" aria-hidden="true"></div>
 
   <div class="layout">
-    <aside class="toc" id="toc" aria-label="Mục lục">
+    <aside class="toc" id="toc" aria-label="Contents">
       <div class="toc-head">
-        <p class="toc-title">Mục lục</p>
-        <button class="toc-close" onclick="closeToc()" aria-label="Đóng">
+        <p class="toc-title">Contents</p>
+        <button class="toc-close" onclick="closeToc()" aria-label="Close">
           <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-x"/></svg>
         </button>
       </div>
       <nav class="toc-nav" id="toc-nav">
-        <a href="#boi-canh" class="lvl-2">Bối cảnh</a>
-        <a href="#muc-tieu" class="lvl-2">Mục tiêu</a>
-        <a href="#kien-truc-de-xuat" class="lvl-2">Kiến trúc đề xuất</a>
-        <a href="#cac-buoc-thuc-hien" class="lvl-2">Các bước thực hiện</a>
-        <a href="#lua-chon-message-bus" class="lvl-2">Lựa chọn message bus</a>
-        <a href="#rui-ro" class="lvl-2">Rủi ro</a>
-        <a href="#uu-nhuoc" class="lvl-2">Ưu / Nhược</a>
+        <a href="#background" class="lvl-2">Background</a>
+        <a href="#goals" class="lvl-2">Goals</a>
+        <a href="#proposed-architecture" class="lvl-2">Proposed architecture</a>
+        <a href="#implementation-steps" class="lvl-2">Implementation steps</a>
+        <a href="#message-bus-choice" class="lvl-2">Message bus choice</a>
+        <a href="#risks" class="lvl-2">Risks</a>
+        <a href="#pros-cons" class="lvl-2">Pros &amp; cons</a>
         <a href="#retry-policy" class="lvl-2">Retry policy</a>
-        <a href="#tong-ket" class="lvl-2">Tổng kết</a>
+        <a href="#summary" class="lvl-2">Summary</a>
       </nav>
     </aside>
 
     <main class="content" id="main">
       <header class="doc-header">
         <span class="doc-eyebrow">PLAN</span>
-        <h1 class="doc-title">Chuyển hệ thống notification từ polling sang webhook</h1>
-        <p class="doc-subtitle">Cắt latency từ ~3 phút xuống &lt;5 giây và giảm 60% tải DB bằng cách thay cron 5-phút bằng Kafka + webhook router.</p>
+        <h1 class="doc-title">Migrating the notification system from polling to webhooks</h1>
+        <p class="doc-subtitle">Cut latency from ~3 minutes to under 5 seconds and reduce DB load by 60% by replacing a 5-minute cron with Kafka + a webhook router.</p>
         <div class="doc-meta">
           <span class="doc-meta-item">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-file"/></svg>
@@ -669,36 +360,36 @@
           </span>
           <span class="doc-meta-item">
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-clock"/></svg>
-            ~3 phút đọc
+            ~3 min read
           </span>
         </div>
       </header>
 
-      <h2 id="boi-canh">Bối cảnh</h2>
-      <p><code>notification-worker</code> hiện chạy cron mỗi 5 phút, scan bảng <code>events</code> tìm row có <code>status = 'pending'</code> rồi gửi notification. Cách này có 3 vấn đề chính:</p>
+      <h2 id="background">Background</h2>
+      <p>The <code>notification-worker</code> runs a cron job every 5 minutes that scans the <code>events</code> table for rows with <code>status = 'pending'</code> and dispatches notifications. This approach has three problems:</p>
       <ul>
-        <li>Latency end-to-end trung bình <strong>2.5 phút</strong>, p99 lên đến <strong>6 phút</strong>.</li>
-        <li>Mỗi lần scan đọc ~50k row, tốn <strong>30% CPU</strong> của DB primary.</li>
-        <li>Khi traffic spike, queue đầy → 1 vài event bị xử lý sau 30 phút.</li>
+        <li>End-to-end latency averages <strong>2.5 minutes</strong>, with p99 reaching <strong>6 minutes</strong>.</li>
+        <li>Each scan reads ~50k rows, consuming <strong>30% of CPU</strong> on the DB primary.</li>
+        <li>During traffic spikes the queue backs up — some events take 30+ minutes to process.</li>
       </ul>
       <aside class="callout callout-info">
         <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-info"/></svg>
         <div class="callout-body">
-          <p class="callout-title">KPI quý này</p>
-          <p>Team được giao mục tiêu giảm notification latency xuống &lt;10s. Plan này là cách đáp ứng.</p>
+          <p class="callout-title">Quarterly KPI</p>
+          <p>The team is committed to dropping notification latency below 10s this quarter. This plan is how we deliver on that.</p>
         </div>
       </aside>
 
-      <h2 id="muc-tieu">Mục tiêu</h2>
-      <p>Sau khi rollout xong:</p>
+      <h2 id="goals">Goals</h2>
+      <p>After rollout:</p>
       <ul>
-        <li>p99 latency notification: <strong>360s → &lt;5s</strong></li>
-        <li>DB query giảm <strong>60%</strong> (đo bằng <code>pg_stat_statements</code>)</li>
-        <li>Không downtime, không mất event nào trong quá trình migrate</li>
+        <li>p99 notification latency: <strong>360s → &lt;5s</strong></li>
+        <li>DB query load reduced by <strong>60%</strong> (measured via <code>pg_stat_statements</code>)</li>
+        <li>Zero downtime, zero event loss during migration</li>
       </ul>
 
-      <h2 id="kien-truc-de-xuat">Kiến trúc đề xuất</h2>
-      <p>Producer (order-service, payment-service, …) emit event qua Kafka. <code>notification-router</code> subscribe topic <code>events.*</code>, route đến đúng channel (email/push/SMS) qua webhook tới <code>notification-worker</code>. Worker gửi notification và ghi audit log vào Postgres.</p>
+      <h2 id="proposed-architecture">Proposed architecture</h2>
+      <p>Producers (order-service, payment-service, …) emit events to Kafka. <code>notification-router</code> subscribes to topic <code>events.*</code> and routes each event to the appropriate channel (email/push/SMS) via a webhook to <code>notification-worker</code>. The worker delivers the notification and writes an audit log to Postgres.</p>
       <figure class="diagram">
         <pre class="mermaid">
 flowchart LR
@@ -709,149 +400,149 @@ flowchart LR
   W --> E[Email/Push/SMS]
   W --> DB[(Postgres audit log)]
         </pre>
-        <figcaption class="diagram-caption">Luồng event từ producer qua Kafka đến worker. Webhook giữa router và worker chạy nội bộ.</figcaption>
+        <figcaption class="diagram-caption">Event flow from producers through Kafka to the worker. The webhook between router and worker stays inside the VPC.</figcaption>
       </figure>
       <aside class="callout callout-info">
         <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-lock"/></svg>
         <div class="callout-body">
-          <p class="callout-title">Bảo mật</p>
-          <p>Webhook giữa router và worker chạy <strong>nội bộ trong cùng VPC</strong>, không qua public internet. Không cần signature verification (chỉ cần mTLS).</p>
+          <p class="callout-title">Security</p>
+          <p>The webhook between router and worker runs <strong>inside the same VPC</strong>, not over the public internet. Signature verification is not required — mTLS is sufficient.</p>
         </div>
       </aside>
 
-      <h2 id="cac-buoc-thuc-hien">Các bước thực hiện</h2>
+      <h2 id="implementation-steps">Implementation steps</h2>
       <div class="timeline">
         <article class="step">
           <div class="step-num">1</div>
           <div class="step-body">
-            <h3>Setup Kafka topic + router skeleton</h3>
-            <p>Tạo topic <code>events.notification</code> với 12 partition, retention 7 ngày. Deploy <code>notification-router</code> stub chỉ log message, chưa gửi đi đâu.</p>
-            <div class="step-tags"><span class="tag">tuần 1</span><span class="tag">infra</span></div>
+            <h3>Set up Kafka topic and router skeleton</h3>
+            <p>Create topic <code>events.notification</code> with 12 partitions and 7-day retention. Deploy a <code>notification-router</code> stub that only logs incoming messages — no real dispatch yet.</p>
+            <div class="step-tags"><span class="tag">week 1</span><span class="tag">infra</span></div>
           </div>
         </article>
         <article class="step">
           <div class="step-num">2</div>
           <div class="step-body">
-            <h3>Migrate producer (double-write)</h3>
-            <p>Sửa <code>order-service</code> và <code>payment-service</code> để emit event vào Kafka song song với insert vào bảng <code>events</code>. Verify event count khớp nhau.</p>
-            <div class="step-tags"><span class="tag">tuần 2</span><span class="tag">backend</span></div>
+            <h3>Migrate producers (double-write)</h3>
+            <p>Update <code>order-service</code> and <code>payment-service</code> to emit events to Kafka in parallel with inserting into the <code>events</code> table. Verify event counts match.</p>
+            <div class="step-tags"><span class="tag">week 2</span><span class="tag">backend</span></div>
           </div>
         </article>
         <article class="step">
           <div class="step-num">3</div>
           <div class="step-body">
             <h3>Wire webhook router → worker</h3>
-            <p>Router gọi webhook tới worker. Worker chạy <strong>song song</strong> với cron cũ — cron vẫn quét bảng <code>events</code> nhưng skip row đã được webhook xử lý.</p>
-            <div class="step-tags"><span class="tag">tuần 3</span><span class="tag">backend</span></div>
+            <p>The router calls the webhook on the worker. The worker runs <strong>in parallel</strong> with the existing cron — cron still scans <code>events</code> but skips rows already processed via the webhook.</p>
+            <div class="step-tags"><span class="tag">week 3</span><span class="tag">backend</span></div>
           </div>
         </article>
         <article class="step">
           <div class="step-num">4</div>
           <div class="step-body">
             <h3>Cutover</h3>
-            <p>Tắt cron job, monitor 48h. Nếu ổn, xoá cột <code>status</code> khỏi bảng <code>events</code> (giữ bảng cho audit).</p>
-            <div class="step-tags"><span class="tag">tuần 4</span><span class="tag">ops</span></div>
+            <p>Stop the cron job and monitor for 48h. If stable, drop the <code>status</code> column from <code>events</code> (keep the table itself for audit).</p>
+            <div class="step-tags"><span class="tag">week 4</span><span class="tag">ops</span></div>
           </div>
         </article>
         <article class="step">
           <div class="step-num">5</div>
           <div class="step-body">
             <h3>Cleanup</h3>
-            <p>Drop bảng <code>events</code> legacy. Tạo Grafana dashboard mới cho metric latency.</p>
-            <div class="step-tags"><span class="tag">tuần 5</span><span class="tag">cleanup</span></div>
+            <p>Drop the legacy <code>events</code> table. Create a new Grafana dashboard for the latency metric.</p>
+            <div class="step-tags"><span class="tag">week 5</span><span class="tag">cleanup</span></div>
           </div>
         </article>
       </div>
 
-      <h2 id="lua-chon-message-bus">Lựa chọn message bus</h2>
-      <p>Có 3 ứng viên chính:</p>
+      <h2 id="message-bus-choice">Message bus choice</h2>
+      <p>Three main candidates:</p>
       <div class="compare">
         <div class="compare-card recommended">
           <h4>Kafka</h4>
-          <p>Throughput cao, đã có cluster sẵn. Retention 7 ngày cho phép replay khi worker fail. Nhược: team chưa quen consumer group rebalancing.</p>
+          <p>High throughput, cluster already deployed. 7-day retention enables replay when the worker fails. Downside: the team isn't fully familiar with consumer-group rebalancing.</p>
         </div>
         <div class="compare-card">
           <h4>RabbitMQ</h4>
-          <p>Đơn giản, dễ ops. Nhưng không có replay, mất message nếu consumer chết trước khi ack.</p>
+          <p>Simple and easy to operate. But no replay, and messages can be lost if a consumer dies before acking.</p>
         </div>
         <div class="compare-card">
           <h4>AWS SQS</h4>
-          <p>Managed, không lo về ops. Cost ~$0.4/M message → $20/tháng cho 50M. Vendor lock-in nhẹ.</p>
+          <p>Managed, no ops burden. Costs about $0.4 per million messages — roughly $20/month at 50M. Slight vendor lock-in.</p>
         </div>
       </div>
       <aside class="callout callout-decision">
         <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-decision"/></svg>
         <div class="callout-body">
-          <p class="callout-title">Quyết định</p>
-          <p>Chọn <strong>Kafka</strong> vì đã có infra sẵn và cần replay capability để không mất event khi worker restart.</p>
+          <p class="callout-title">Decision</p>
+          <p>Go with <strong>Kafka</strong>. The infrastructure already exists, and replay capability is essential for avoiding event loss during worker restarts.</p>
         </div>
       </aside>
 
-      <h2 id="rui-ro">Rủi ro</h2>
+      <h2 id="risks">Risks</h2>
       <aside class="callout callout-warn">
         <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-warn"/></svg>
         <div class="callout-body">
-          <p class="callout-title">Webhook bị mất khi worker restart</p>
-          <p>Phải implement <strong>idempotency key + exponential backoff retry</strong> ở router để không drop event.</p>
+          <p class="callout-title">Lost webhook on worker restart</p>
+          <p>We must implement an <strong>idempotency key plus exponential backoff retry</strong> in the router so events are never silently dropped.</p>
         </div>
       </aside>
       <aside class="callout callout-warn">
         <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-warn"/></svg>
         <div class="callout-body">
-          <p class="callout-title">Double-write inconsistency (tuần 2)</p>
-          <p>Kafka emit có thể fail trong khi DB insert thành công. Mitigation: dùng <strong>transactional outbox pattern</strong>.</p>
+          <p class="callout-title">Double-write inconsistency (week 2)</p>
+          <p>A Kafka emit can fail after the DB insert succeeds. Mitigation: use the <strong>transactional outbox pattern</strong>.</p>
         </div>
       </aside>
       <aside class="callout callout-danger">
         <svg class="callout-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-danger"/></svg>
         <div class="callout-body">
-          <p class="callout-title">Không được drop bảng <code>events</code> trước tuần 5</p>
-          <p>Nếu phát hiện bug ở tuần 4 cần rollback, dữ liệu này là nguồn duy nhất để restore state.</p>
+          <p class="callout-title">Do not drop the <code>events</code> table before week 5</p>
+          <p>If we hit a bug in week 4 and need to roll back, that table is our only restore source.</p>
         </div>
       </aside>
 
-      <h2 id="uu-nhuoc">Ưu / Nhược webhook approach</h2>
+      <h2 id="pros-cons">Pros &amp; cons of the webhook approach</h2>
       <div class="proscons">
         <div class="proscons-col pros">
-          <h4>✓ Ưu điểm</h4>
+          <h4>✓ Pros</h4>
           <ul>
-            <li>Realtime, không phải poll</li>
-            <li>Giảm tải DB drastically</li>
-            <li>Scale ngang theo partition Kafka</li>
+            <li>Real-time delivery, no polling overhead</li>
+            <li>DB load drops drastically</li>
+            <li>Scales horizontally with Kafka partitions</li>
           </ul>
         </div>
         <div class="proscons-col cons">
-          <h4>✕ Nhược điểm</h4>
+          <h4>✕ Cons</h4>
           <ul>
-            <li>Cần xử lý retry/idempotency cẩn thận</li>
-            <li>Debug khó hơn cron (state nằm ở queue)</li>
-            <li>Phải maintain 2 codepath trong 4 tuần</li>
+            <li>Retry and idempotency need careful handling</li>
+            <li>Harder to debug than cron (state lives in the queue)</li>
+            <li>Two code paths to maintain for four weeks</li>
           </ul>
         </div>
       </div>
 
       <h2 id="retry-policy">Retry policy</h2>
       <details class="collapsible">
-        <summary>Chi tiết exponential backoff + dead-letter</summary>
+        <summary>Exponential backoff and dead-letter handling</summary>
         <div class="collapsible-body">
-          <p>Khi webhook fail, router retry theo exponential backoff: <strong>1s, 4s, 16s, 64s, 256s, 1024s</strong>. Sau 6 lần fail, push event vào dead-letter topic <code>events.dlq</code> và alert oncall.</p>
+          <p>When a webhook call fails, the router retries with exponential backoff: <strong>1s, 4s, 16s, 64s, 256s, 1024s</strong>. After six failures the event is pushed to dead-letter topic <code>events.dlq</code> and oncall is paged.</p>
           <p>Idempotency key:</p>
           <pre><code>idempotency_key = sha256(event_id + channel + recipient)
-// store ở Redis TTL 24h
-// worker check trước khi gửi notification</code></pre>
-          <p>Tham khảo: <a href="https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/">Timeouts, Retries and Backoff with Jitter (AWS Builders' Library)</a>.</p>
+// store in Redis with 24h TTL
+// worker checks before delivering</code></pre>
+          <p>Reference: <a href="https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/">Timeouts, Retries and Backoff with Jitter (AWS Builders' Library)</a>.</p>
         </div>
       </details>
 
-      <h2 id="tong-ket">Tổng kết</h2>
+      <h2 id="summary">Summary</h2>
       <div class="highlight">
-        <span class="highlight-label">Ý chính</span>
-        <p>Chuyển từ polling sang webhook cắt giảm <strong>99% latency</strong> và <strong>60% DB load</strong>, đổi lại độ phức tạp tăng vừa phải. Plan 5 tuần với 1 tuần monitoring trước cutover đảm bảo rollback an toàn.</p>
+        <span class="highlight-label">Key point</span>
+        <p>Switching from polling to webhooks cuts <strong>99% of latency</strong> and <strong>60% of DB load</strong> in exchange for a moderate increase in operational complexity. A five-week plan with one week of monitoring before cutover keeps rollback safe.</p>
       </div>
 
       <footer class="doc-footer">
         <span>Generated by <a href="#">md2html</a></span>
-        <span>Nguồn: example-plan.md</span>
+        <span>Source: example-plan.md</span>
       </footer>
     </main>
   </div>
