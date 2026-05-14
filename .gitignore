@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Test renders (user-generated, not canonical examples)
+# Only examples/example-* files are checked in as the gold-standard reference.
+examples/PLAN-TEST*
+examples/test*
+examples/TEST-*
+examples/temp*
+examples/*.test.html
+examples/scratch*
+
+# Build / temp
+*.tmp
+*.log
+.cache/
+
+# Node (just in case)
+node_modules/
+package-lock.json
+yarn.lock
